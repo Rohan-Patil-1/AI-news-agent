@@ -1,6 +1,7 @@
 import os
 import json
 import datetime
+import time
 import feedparser
 import requests
 from google import genai
@@ -101,13 +102,46 @@ def rank_and_reason(articles):
     prompt = RANKING_PROMPT.format(
         articles_json=json.dumps(articles, indent=2)[:12000]
     )
-    response = client.models.generate_content(
-        model="gemini-flash-latest",
-        contents=prompt,
-    )
-    text = response.text.strip()
 
-    return json.loads(text)
+    models_to_try = [
+        "gemini-flash-latest",
+    ]
+
+    last_error = None
+
+    for model in models_to_try:
+        for attempt in range(4):
+            try:
+                print(
+                    f"Calling Gemini model {model} "
+                    f"(attempt {attempt + 1}/4)..."
+                )
+
+                response = client.models.generate_content(
+                    model=model,
+                    contents=prompt,
+                )
+
+                text = response.text.strip()
+                return json.loads(text)
+
+            except Exception as e:
+                last_error = e
+
+                print(
+                    f"Gemini request failed: {type(e).__name__}: {e}"
+                )
+
+                if attempt < 3:
+                    wait_time = 2 ** attempt * 5
+                    print(
+                        f"Retrying in {wait_time} seconds..."
+                    )
+                    time.sleep(wait_time)
+
+    raise RuntimeError(
+        f"Gemini failed after all retry attempts: {last_error}"
+    )
 
 def write_digest(top5):
     os.makedirs(OUTPUT_DIR, exist_ok=True)
