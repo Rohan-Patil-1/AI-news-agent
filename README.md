@@ -1,6 +1,6 @@
 # AI-news-agent
 
-# Daily AI News Agent
+# Release v0.1.0: AI news ranking agent 
 
 A small, single-agent system that autonomously researches AI news every day, picks the 5 most significant stories, explains *why* each one made the cut, and writes a markdown digest — running unattended on a daily schedule via GitHub Actions.
 
