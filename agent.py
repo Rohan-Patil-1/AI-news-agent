@@ -104,7 +104,8 @@ def rank_and_reason(articles):
     )
 
     models_to_try = [
-        "gemini-flash-latest",
+        "gemini-3.5-flash-lite",
+        "gemini-3.5-flash",
     ]
 
     last_error = None
@@ -123,24 +124,55 @@ def rank_and_reason(articles):
                 )
 
                 text = response.text.strip()
-                return json.loads(text)
+
+                # Remove markdown fences if Gemini happens to add them
+                if text.startswith("```json"):
+                    text = text[7:]
+                elif text.startswith("```"):
+                    text = text[3:]
+
+                if text.endswith("```"):
+                    text = text[:-3]
+
+                text = text.strip()
+
+                result = json.loads(text)
+
+                if not isinstance(result, list):
+                    raise ValueError("Gemini response was not a JSON list.")
+
+                if len(result) == 0:
+                    raise ValueError("Gemini returned an empty result.")
+
+                print(
+                    f"Gemini succeeded using {model} "
+                    f"on attempt {attempt + 1}."
+                )
+
+                return result[:5]
 
             except Exception as e:
                 last_error = e
 
                 print(
-                    f"Gemini request failed: {type(e).__name__}: {e}"
+                    f"Gemini request failed for {model}: "
+                    f"{type(e).__name__}: {e}"
                 )
 
                 if attempt < 3:
-                    wait_time = 2 ** attempt * 5
+                    wait_time = 5 * (2 ** attempt)
                     print(
                         f"Retrying in {wait_time} seconds..."
                     )
                     time.sleep(wait_time)
 
+        print(
+            f"Model {model} failed after 4 attempts. "
+            f"Trying next model..."
+        )
+
     raise RuntimeError(
-        f"Gemini failed after all retry attempts: {last_error}"
+        f"Gemini failed after all model/ retry attempts: {last_error}"
     )
 
 def write_digest(top5):
