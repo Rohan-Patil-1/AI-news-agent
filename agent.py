@@ -5,6 +5,7 @@ import time
 import feedparser
 import requests
 from google import genai
+from email_digest import send_email
 
 RSS_FEEDS = [
     "https://techcrunch.com/category/artificial-intelligence/feed/",
@@ -202,7 +203,9 @@ def main():
         return
 
     top5 = rank_and_reason(candidates)
-    write_digest(top5)
+    digest_path = write_digest(top5)
+
+    send_email(top5, digest_path)
 
 
 if __name__ == "__main__":
