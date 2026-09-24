@@ -6,6 +6,7 @@ import feedparser
 import requests
 from google import genai
 from email_digest import send_email
+from google.genai import types
 
 RSS_FEEDS = [
     "https://techcrunch.com/category/artificial-intelligence/feed/",
@@ -139,6 +140,27 @@ def rank_and_reason(articles, preferences):
                 response = client.models.generate_content(
                     model=model,
                     contents=prompt,
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json",
+                        response_schema={
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "title": {"type": "string"},
+                                    "link": {"type": "string"},
+                                    "description": {"type": "string"},
+                                    "reasoning": {"type": "string"},
+                                },
+                                "required": [
+                                    "title",
+                                    "link",
+                                    "description",
+                                    "reasoning",
+                                ],
+                            },
+                        },
+                    ),
                 )
 
                 text = response.text.strip()
