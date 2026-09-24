@@ -73,23 +73,39 @@ def dedupe(articles):
         unique.append(a)
     return unique
 
-RANKING_PROMPT = """You are an AI news analyst. Below is a list of candidate
-articles from the last 48 hours, some with real engagement data (points,
-comments) and some without.
+def load_preferences():
+    with open("preferences.json", "r", encoding="utf-8") as f:
+        return json.load(f)
 
-Pick the TOP 5 by genuine significance to the AI field - not just
-popularity. When an article has engagement numbers, weigh them as one
-signal among several (novelty, impact, credibility of source), and cite
-the actual numbers in your reasoning when you use them. Do not invent
-engagement numbers for articles that don't have any.
+RANKING_PROMPT = """You are an AI news analyst.
+
+The user has provided personal news preferences. Use these preferences
+to help determine which stories are most relevant to the user.
+
+Personal preferences:
+{preferences_json}
+
+Below is a list of candidate articles from the last 48 hours.
+
+Select the TOP 5 stories using BOTH:
+1. Genuine significance to the AI field.
+2. Relevance to the user's personal preferences.
+
+Do not select an article only because it matches a keyword.
+Consider the actual substance of the article.
+
+When an article has engagement numbers, weigh them as one signal among
+several factors such as novelty, impact, credibility, and relevance.
+Do not invent engagement numbers.
 
 Return ONLY valid JSON, no markdown fences, matching this schema:
+
 [
   {{
     "title": "...",
     "link": "...",
     "description": "one or two sentence plain-language summary",
-    "reasoning": "one or two sentences on why this made the top 5, grounded in what you were given"
+    "reasoning": "one or two sentences explaining both its significance and relevance to the user"
   }}
 ]
 
@@ -97,11 +113,12 @@ Candidate articles:
 {articles_json}
 """
 
-def rank_and_reason(articles):
+def rank_and_reason(articles, preferences):
     client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
     prompt = RANKING_PROMPT.format(
-        articles_json=json.dumps(articles, indent=2)[:12000]
+    preferences_json=json.dumps(preferences, indent=2),
+    articles_json=json.dumps(articles, indent=2)[:12000]
     )
 
     models_to_try = [
@@ -202,7 +219,8 @@ def main():
         print("No candidate articles found — check feed URLs / network access.")
         return
 
-    top5 = rank_and_reason(candidates)
+    preferences = load_preferences()
+    top5 = rank_and_reason(candidates, preferences)
     digest_path = write_digest(top5)
 
     send_email(top5, digest_path)

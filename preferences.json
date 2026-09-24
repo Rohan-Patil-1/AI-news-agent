@@ -1,0 +1,28 @@
+{
+  "topics": [
+    "Agentic AI",
+    "AI Agents",
+    "Large Language Models",
+    "Generative AI",
+    "Machine Learning",
+    "Computer Vision",
+    "Multimodal AI",
+    "AI Research",
+    "AI Engineering",
+    "Medical AI",
+    "Healthcare AI",
+    "Medical Imaging",
+    "Clinical AI"
+  ],
+  "preferred_sources": [
+    "TechCrunch",
+    "VentureBeat",
+    "MIT Technology Review",
+    "Ars Technica",
+    "Hacker News"
+  ],
+  "avoid_topics": [
+    "AI entertainment news",
+    "celebrity technology news"
+  ]
+}
