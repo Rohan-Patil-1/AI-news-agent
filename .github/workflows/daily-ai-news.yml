@@ -1,9 +1,12 @@
 name: Daily AI News Digest
 
-on:
+oon:
   schedule:
     - cron: "0 14 * * *"
   workflow_dispatch:
+  push:
+    branches:
+      - feature/email-digest
 
 permissions:
   contents: write
