@@ -1,6 +1,6 @@
 name: Daily AI News Digest
 
-oon:
+on:
   schedule:
     - cron: "0 14 * * *"
   workflow_dispatch:
