@@ -25,11 +25,14 @@ jobs:
         run: |
           pip install -r requirements.txt
 
-      - name: Run AI News Agent
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: |
-          python agent.py
+    - name: Run AI News Agent
+    env:
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      EMAIL_ADDRESS: ${{ secrets.EMAIL_ADDRESS }}
+      EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
+      RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
+    run: |
+      python agent.py
 
       - name: Commit new digest
         run: |
