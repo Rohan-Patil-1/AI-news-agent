@@ -4,8 +4,7 @@ An autonomous AI news research agent that collects recent AI stories, removes du
 
 **Status:** Live — runs automatically every day via GitHub Actions.
 
-**Latest Release:** `v0.2.0` — Automated Email Digest
-
+**Latest Release:** `v0.3.0` — Personalized AI News
 ---
 
 ## What This Project Does
@@ -46,4 +45,4 @@ The system asks Gemini to determine which stories are most significant based on 
 
 The agent then explains its selection.
 
-Combined with autonomous scheduled execution and automated output delivery, this creates a small but practical agentic workflow.
+Combined with autonomous scheduled execution and automated output delivery, this creates a small but practical agentic workflow. Starting with **v0.3.0**, the agent supports configurable user preferences through `preferences.json`.
