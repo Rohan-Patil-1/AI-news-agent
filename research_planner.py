@@ -110,8 +110,8 @@ def plan_research(
     client = _planner_client()
 
     stories_json = json.dumps(
-    [story.model_dump(mode="json") for story in stories],
-    indent=2,
+        [story.model_dump(mode="json") for story in stories],
+        indent=2,
     )
 
     prompt = PLANNER_PROMPT.replace("{stories_json}", stories_json)

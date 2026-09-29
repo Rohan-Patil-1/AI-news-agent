@@ -8,6 +8,9 @@ from google import genai
 from email_digest import send_email
 from research_runner import run_top5_research
 from google.genai import types
+from dotenv import load_dotenv
+
+load_dotenv()
 
 RSS_FEEDS = [
     "https://techcrunch.com/category/artificial-intelligence/feed/",

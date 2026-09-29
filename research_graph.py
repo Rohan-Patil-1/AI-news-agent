@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+from research_planner import plan_research
 from datetime import datetime, timezone
 from uuid import uuid4
 
@@ -8,7 +8,6 @@ from langgraph.graph import END, START, StateGraph
 from research_models import (
     ResearchReport,
     ResearchState,
-    ResearchTask,
     StorySynthesis,
     TopStory,
 )
@@ -21,30 +20,17 @@ def create_run_id() -> str:
 
 
 def planner_node(state: ResearchState) -> dict:
-    """Create the initial investigation tasks for each selected story."""
+    """Create story-specific investigation tasks using the planner agent."""
 
-    tasks: list[ResearchTask] = []
+    stories = state.get("top_stories", [])
 
-    for index, story in enumerate(state.get("top_stories", []), start=1):
-        tasks.append(
-            ResearchTask(
-                task_id=f"story-{index}-source-research",
-                story_title=story.title,
-                objective=(
-                    "Find authoritative and independent sources that verify "
-                    "the main claims in this story."
-                ),
-                agent_type="source_research",
-                priority="high",
-                search_queries=[story.title],
-            )
-        )
+    if not stories:
+        raise ValueError("Planner received no top stories.")
 
     return {
-        "research_tasks": tasks,
+        "research_tasks": plan_research(stories),
         "status": "researching",
     }
-
 
 def report_node(state: ResearchState) -> dict:
     """Create a temporary report proving the graph completed successfully."""
