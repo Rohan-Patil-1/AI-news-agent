@@ -28,6 +28,9 @@ jobs:
       - name: Run AI News Agent
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_PLANNER_MODEL: gemini-3.8-flash
+          GEMINI_SOURCE_MODEL: gemini-3.8-flash
+          GEMINI_COMPARISON_MODEL: gemini-3.8-flash
           EMAIL_ADDRESS: ${{ secrets.EMAIL_ADDRESS }}
           EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
           RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
