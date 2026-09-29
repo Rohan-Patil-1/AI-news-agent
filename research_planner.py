@@ -10,7 +10,7 @@ from google.genai import types
 
 from research_models import ResearchTask, TopStory
 
-load_dotenv()
+load_dotenv(override=True)
 
 PLANNER_PROMPT = """You are a research planning agent.
 
@@ -123,7 +123,7 @@ def plan_research(
             response = client.models.generate_content(
                 model=os.environ.get(
                     "GEMINI_PLANNER_MODEL",
-                    "gemini-3.5-flash",
+                    "gemini-3.8-flash",
                 ),
                 contents=prompt,
                 config=types.GenerateContentConfig(
