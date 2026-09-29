@@ -4,7 +4,8 @@ from datetime import datetime, timezone
 from uuid import uuid4
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from source_research_agent import research_task
-
+from collections import defaultdict
+from source_comparison_agent import compare_findings
 from langgraph.graph import END, START, StateGraph
 
 from research_models import (
@@ -121,6 +122,47 @@ def report_node(state: ResearchState) -> dict:
         "status": "completed",
     }
 
+def source_comparison_node(state: ResearchState) -> dict:
+    """Compare findings independently for each story."""
+
+    findings_by_story = defaultdict(list)
+
+    for finding in state.get("source_findings", []):
+        findings_by_story[finding.story_title].append(finding)
+
+    story_titles = [
+        story.title for story in state.get("top_stories", [])
+    ]
+
+    comparisons = []
+
+    with ThreadPoolExecutor(
+        max_workers=min(4, max(1, len(story_titles)))
+    ) as executor:
+        futures = {
+            executor.submit(
+                compare_findings,
+                story_title,
+                findings_by_story.get(story_title, []),
+            ): story_title
+            for story_title in story_titles
+        }
+
+        for future in as_completed(futures):
+            story_title = futures[future]
+
+            try:
+                comparisons.append(future.result())
+            except Exception as error:
+                raise RuntimeError(
+                    f"Source comparison failed for {story_title}: "
+                    f"{type(error).__name__}: {error}"
+                ) from error
+
+    return {
+        "source_comparisons": comparisons,
+        "status": "synthesizing",
+    }
 
 def build_research_graph():
     """Build and compile the initial research workflow."""
@@ -128,11 +170,13 @@ def build_research_graph():
     graph = StateGraph(ResearchState)
     graph.add_node("planner", planner_node)
     graph.add_node("source_research", source_research_node)
+    graph.add_node("source_comparison", source_comparison_node)
     graph.add_node("report", report_node)
 
     graph.add_edge(START, "planner")
     graph.add_edge("planner", "source_research")
-    graph.add_edge("source_research", "report")
+    graph.add_edge("source_research", "source_comparison")
+    graph.add_edge("source_comparison", "report")
     graph.add_edge("report", END)
 
     return graph.compile()
