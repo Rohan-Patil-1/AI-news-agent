@@ -5,11 +5,12 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from urllib.parse import quote_plus, urlparse
-
+from dotenv import load_dotenv
 import feedparser
 import requests
 from bs4 import BeautifulSoup
 
+load_dotenv()
 
 USER_AGENT = (
     "AI-News-Agent/0.4 research source reader; "

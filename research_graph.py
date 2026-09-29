@@ -2,6 +2,8 @@ from __future__ import annotations
 from research_planner import plan_research
 from datetime import datetime, timezone
 from uuid import uuid4
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from source_research_agent import research_task
 
 from langgraph.graph import END, START, StateGraph
 
@@ -32,6 +34,48 @@ def planner_node(state: ResearchState) -> dict:
         "status": "researching",
     }
 
+def source_research_node(state: ResearchState) -> dict:
+    """Run independent source-research tasks concurrently."""
+
+    tasks = state.get("research_tasks", [])
+
+    if not tasks:
+        raise ValueError("Source research received no research tasks.")
+
+    findings = []
+    errors = []
+
+    with ThreadPoolExecutor(
+        max_workers=min(4, len(tasks))
+    ) as executor:
+        futures = {
+            executor.submit(research_task, task): task
+            for task in tasks
+            if task.agent_type == "source_research"
+        }
+
+        for future in as_completed(futures):
+            task = futures[future]
+
+            try:
+                findings.extend(future.result())
+            except Exception as error:
+                message = (
+                    f"Source research failed for {task.task_id}: "
+                    f"{type(error).__name__}: {error}"
+                )
+                print(message)
+                errors.append(message)
+
+                if task.required:
+                    raise RuntimeError(message) from error
+
+    return {
+        "source_findings": findings,
+        "errors": errors,
+        "status": "analyzing",
+    }
+
 def report_node(state: ResearchState) -> dict:
     """Create a temporary report proving the graph completed successfully."""
 
@@ -60,12 +104,16 @@ def report_node(state: ResearchState) -> dict:
             "Personalized stories were received from the v0.3.0 pipeline.",
             "A research task was created for each story.",
             "Detailed source retrieval and analysis will be added incrementally.",
+            "Free Google News RSS and Hacker News retrieval was used.",
+            "Retrieved source content was analyzed into validated findings."
         ],
         limitations=[
             "This initial workflow does not yet retrieve external sources.",
             "This initial workflow does not yet call a language model.",
+            "Some publishers may block automated retrieval.",
+            "Source coverage depends on free RSS and Hacker News availability."
         ],
-        source_count=0,
+        source_count=len(state.get("source_findings", [])),
     )
 
     return {
@@ -79,10 +127,12 @@ def build_research_graph():
 
     graph = StateGraph(ResearchState)
     graph.add_node("planner", planner_node)
+    graph.add_node("source_research", source_research_node)
     graph.add_node("report", report_node)
 
     graph.add_edge(START, "planner")
-    graph.add_edge("planner", "report")
+    graph.add_edge("planner", "source_research")
+    graph.add_edge("source_research", "report")
     graph.add_edge("report", END)
 
     return graph.compile()
