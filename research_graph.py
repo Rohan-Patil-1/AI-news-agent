@@ -7,6 +7,7 @@ from source_research_agent import research_task
 from collections import defaultdict
 from source_comparison_agent import compare_findings
 from langgraph.graph import END, START, StateGraph
+from technical_analysis_agent import analyze_technical_task
 
 from research_models import (
     ResearchReport,
@@ -164,6 +165,70 @@ def source_comparison_node(state: ResearchState) -> dict:
         "status": "synthesizing",
     }
 
+def technical_analysis_node(state: ResearchState) -> dict:
+    """Run planned technical-analysis tasks concurrently."""
+
+    tasks = [
+        task
+        for task in state.get("research_tasks", [])
+        if task.agent_type == "technical_analysis"
+    ]
+
+    if not tasks:
+        return {
+            "technical_analyses": [],
+            "status": "analyzing",
+        }
+
+    stories_by_title = {
+        story.title: story
+        for story in state.get("top_stories", [])
+    }
+
+    findings_by_story = defaultdict(list)
+
+    for finding in state.get("source_findings", []):
+        findings_by_story[finding.story_title].append(finding)
+
+    analyses = []
+
+    with ThreadPoolExecutor(
+        max_workers=min(4, len(tasks))
+    ) as executor:
+        futures = {}
+
+        for task in tasks:
+            story = stories_by_title.get(task.story_title)
+
+            if story is None:
+                raise ValueError(
+                    f"No Top 5 story found for task {task.task_id}."
+                )
+
+            future = executor.submit(
+                analyze_technical_task,
+                task,
+                story.model_dump(mode="json"),
+                findings_by_story.get(task.story_title, []),
+            )
+            futures[future] = task
+
+        for future in as_completed(futures):
+            task = futures[future]
+
+            try:
+                analyses.append(future.result())
+            except Exception as error:
+                raise RuntimeError(
+                    f"Technical analysis failed for {task.task_id}: "
+                    f"{type(error).__name__}: {error}"
+                ) from error
+
+    return {
+        "technical_analyses": analyses,
+        "status": "analyzing",
+    }
+
 def build_research_graph():
     """Build and compile the initial research workflow."""
 
@@ -171,11 +236,13 @@ def build_research_graph():
     graph.add_node("planner", planner_node)
     graph.add_node("source_research", source_research_node)
     graph.add_node("source_comparison", source_comparison_node)
+    graph.add_node("technical_analysis", technical_analysis_node)
     graph.add_node("report", report_node)
 
     graph.add_edge(START, "planner")
     graph.add_edge("planner", "source_research")
-    graph.add_edge("source_research", "source_comparison")
+    graph.add_edge("source_research", "technical_analysis")
+    graph.add_edge("technical_analysis", "source_comparison")
     graph.add_edge("source_comparison", "report")
     graph.add_edge("report", END)
 
