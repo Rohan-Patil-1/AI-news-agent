@@ -19,7 +19,7 @@ USER_AGENT = (
 
 REQUEST_TIMEOUT_SECONDS = 15
 MAX_ARTICLE_CHARS = 12000
-MAX_RESULTS_PER_QUERY = 5
+MAX_RESULTS_PER_QUERY = 1
 
 GOOGLE_NEWS_RSS_URL = (
     "https://news.google.com/rss/search?q={query}&hl=en-US&gl=US&ceid=US:en"
