@@ -28,16 +28,19 @@ jobs:
       - name: Run AI News Agent
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_PLANNER_MODEL: gemini-3.8-flash
+          GEMINI_SOURCE_MODEL: gemini-3.8-flash
+          GEMINI_COMPARISON_MODEL: gemini-3.8-flash
           EMAIL_ADDRESS: ${{ secrets.EMAIL_ADDRESS }}
           EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
           RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
         run: |
           python agent.py
 
-      - name: Commit new digest
+      - name: Commit generated reports
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add digests/
-          git diff --cached --quiet || git commit -m "Create AI News Digest"
+          git add digests/ research_reports/
+          git diff --cached --quiet || git commit -m "Create AI news and research reports"
           git push
