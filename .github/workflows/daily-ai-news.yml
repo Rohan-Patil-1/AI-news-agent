@@ -25,12 +25,17 @@ jobs:
         run: |
           pip install -r requirements.txt
 
+      - name: Prepare report directories
+        run: |
+          mkdir -p digests research_reports
+
       - name: Run AI News Agent
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_PLANNER_MODEL: gemini-3.8-flash
           GEMINI_SOURCE_MODEL: gemini-3.8-flash
           GEMINI_COMPARISON_MODEL: gemini-3.8-flash
+          GEMINI_TECHNICAL_MODEL: gemini-3.8-flash
           GEMINI_SYNTHESIS_MODEL: gemini-3.8-flash
           GEMINI_REPORT_MODEL: gemini-3.8-flash
           EMAIL_ADDRESS: ${{ secrets.EMAIL_ADDRESS }}
@@ -39,10 +44,27 @@ jobs:
         run: |
           python agent.py
 
+      - name: Verify generated files
+        run: |
+          echo "Generated files:"
+          find digests research_reports -maxdepth 2 -type f -print 2>/dev/null || true
+
       - name: Commit generated reports
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add digests/ research_reports/
-          git diff --cached --quiet || git commit -m "Create AI news and research reports"
-          git push
+
+          if [ -d "digests" ]; then
+            git add digests/
+          fi
+
+          if [ -d "research_reports" ]; then
+            git add research_reports/
+          fi
+
+          if git diff --cached --quiet; then
+            echo "No generated report changes to commit."
+          else
+            git commit -m "Create AI news and research reports"
+            git push
+          fi

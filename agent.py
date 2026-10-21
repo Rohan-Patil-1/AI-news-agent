@@ -6,7 +6,11 @@ import feedparser
 import requests
 from google import genai
 from email_digest import send_email
+from research_runner import run_top5_research
 from google.genai import types
+from dotenv import load_dotenv
+
+load_dotenv()
 
 RSS_FEEDS = [
     "https://techcrunch.com/category/artificial-intelligence/feed/",
@@ -244,6 +248,10 @@ def main():
     preferences = load_preferences()
     top5 = rank_and_reason(candidates, preferences)
     digest_path = write_digest(top5)
+    research_path = run_top5_research(top5)
+
+    print(f"Daily digest: {digest_path}")
+    print(f"Research report: {research_path}")
 
     send_email(top5, digest_path)
 
